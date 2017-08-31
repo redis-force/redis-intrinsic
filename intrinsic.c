@@ -92,7 +92,7 @@ static int intrinsic_hpackall_command(RedisModuleCtx *ctx, RedisModuleString **a
     }
     RedisModule_CloseKey(key);
   } else {
-    RedisModule_ReplyWithStringBuffer(ctx, (const char *) &hctx.count, sizeof(hctx.count));
+    RedisModule_ReplyWithNull(ctx);
   }
   RedisModule_Free(hctx.buffer);
   return REDISMODULE_OK;
