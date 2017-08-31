@@ -81,13 +81,18 @@ static int intrinsic_hpackall_command(RedisModuleCtx *ctx, RedisModuleString **a
   if (argc != 2) {
     return RedisModule_WrongArity(ctx);
   }
-  key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_WRITE);
-  intrinsic_hpackall_check_buffer(&hctx, 1024 * 1024);
-  if (RedisModule_HashGetAll(key, intrinsic_hpackall_sink, &hctx) == REDISMODULE_OK) {
-    memcpy(hctx.buffer, &hctx.count, sizeof(hctx.count));
-    RedisModule_ReplyWithStringBuffer(ctx, hctx.buffer, hctx.size);
+  key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+  if (key != NULL) {
+    intrinsic_hpackall_check_buffer(&hctx, 1024 * 1024);
+    if (RedisModule_HashGetAll(key, intrinsic_hpackall_sink, &hctx) == REDISMODULE_OK) {
+      memcpy(hctx.buffer, &hctx.count, sizeof(hctx.count));
+      RedisModule_ReplyWithStringBuffer(ctx, hctx.buffer, hctx.size);
+    } else {
+      RedisModule_ReplyWithError(ctx, "ERR internal error");
+    }
+    RedisModule_CloseKey(key);
   } else {
-    RedisModule_ReplyWithError(ctx, "ERR internal error");
+    RedisModule_ReplyWithStringBuffer(ctx, (const char *) &hctx.count, sizeof(hctx.count));
   }
   RedisModule_Free(hctx.buffer);
   return REDISMODULE_OK;
