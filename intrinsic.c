@@ -4,6 +4,7 @@
 static int intrinsic_hpackall_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 static int intrinsic_happend_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 static int intrinsic_hmappend_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
+static int intrinsic_mexists_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
 struct intrinsic_command {
   const char *name;
@@ -18,6 +19,7 @@ static struct intrinsic_command intrinsics[] = {
   {"hpackall", intrinsic_hpackall_command, "readonly", 1, 1, 1},
   {"happend", intrinsic_happend_command, "write deny-oom", 1, 1, 1},
   {"hmappend", intrinsic_hmappend_command, "write deny-oom", 1, 1, 1},
+  {"mexists", intrinsic_mexists_command, "readonly", 1, 1, 1},
 };
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -163,4 +165,26 @@ static int intrinsic_hmappend_command(RedisModuleCtx *ctx, RedisModuleString **a
     return RedisModule_WrongArity(ctx);
   }
   return intrinsic_hash_append_command(ctx, argv[1], argv + 2, (argc - 2) / 2, 1);
+}
+
+static int intrinsic_mexists_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+  int idx;
+  RedisModuleKey *key;
+  const char *reply;
+  /* mexists key [key ...] */
+  if (argc < 2) {
+    return RedisModule_WrongArity(ctx);
+  }
+  RedisModule_ReplyWithArray(ctx, argc - 1);
+  for (idx = 1; idx < argc; ++idx) {
+    key = RedisModule_OpenKey(ctx, argv[idx], REDISMODULE_READ);
+    if (key != NULL) {
+      reply = "1";
+      RedisModule_CloseKey(key);
+    } else {
+      reply = "0";
+    }
+    RedisModule_ReplyWithStringBuffer(ctx, reply, 1);
+  }
+  return REDISMODULE_OK;
 }
